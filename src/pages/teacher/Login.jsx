@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-// import { useAuth } from '../../hooks/useAuth'
+import { useAuth } from '../../hooks/useAuth'
 import { validateLoginForm } from '../../utils/validation'
 import { Eye, EyeOff, Mail, Lock, BookOpen } from 'lucide-react'
 import LoadingSpinner from '../../components/common/LoadingSpinner'

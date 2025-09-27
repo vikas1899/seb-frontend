@@ -96,7 +96,7 @@ export const SUCCESS_MESSAGES = {
 // Validation Rules
 export const VALIDATION = {
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  PASSWORD_MIN_LENGTH: 8,
+  PASSWORD_MIN_LENGTH: 3,
   EXAM_TITLE_MIN_LENGTH: 3,
   EXAM_TITLE_MAX_LENGTH: 100,
   EXAM_DURATION_MIN: 15, // minutes

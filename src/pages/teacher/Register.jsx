@@ -18,9 +18,16 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [unsplashImage, setUnsplashImage] = useState('')
 
   const { register, isAuthenticated, loading, error, clearError } = useAuth()
   const navigate = useNavigate()
+
+  // Fetch Unsplash random image on mount
+  useEffect(() => {
+    const url = 'https://source.unsplash.com/random/800x800?technology'
+    setUnsplashImage(url + '&' + new Date().getTime())
+  }, [])
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -29,7 +36,7 @@ const Register = () => {
     }
   }, [isAuthenticated, loading, navigate])
 
-  // Clear auth errors when component mounts
+  // Clear auth errors on mount
   useEffect(() => {
     clearError()
   }, [clearError])
@@ -37,8 +44,6 @@ const Register = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
-    
-    // Clear field error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }))
     }
@@ -46,8 +51,7 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
-    // Validate form
+
     const validation = validateRegisterForm(formData)
     if (!validation.isValid) {
       setErrors(validation.errors)
@@ -66,15 +70,14 @@ const Register = () => {
       }
 
       const result = await register(userData)
-      
       if (result.success) {
         toast.success('Registration successful!')
         navigate('/teacher/dashboard', { replace: true })
       } else {
         toast.error(result.error || 'Registration failed')
       }
-    } catch (err) {
-      toast.error('An unexpected error occurred')
+    } catch (err){
+      toast.error('An unexpected error occurred',err)
     } finally {
       setIsSubmitting(false)
     }
@@ -105,20 +108,10 @@ const Register = () => {
             <h2 className="text-3xl font-bold text-gray-900">
               Create your account
             </h2>
-            <p className="mt-2 text-sm text-gray-600">
-              Already have an account?{' '}
-              <Link
-                to="/teacher/login"
-                className="font-medium text-primary-600 hover:text-primary-500"
-              >
-                Sign in here
-              </Link>
-            </p>
           </div>
 
           <div className="mt-8">
             <form className="space-y-6" onSubmit={handleSubmit}>
-              {/* Name fields */}
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 {/* First Name */}
                 <div>
@@ -231,6 +224,7 @@ const Register = () => {
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
                     onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
                   >
                     {showPassword ? (
                       <EyeOff className="h-5 w-5 text-gray-400" />
@@ -270,6 +264,7 @@ const Register = () => {
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    tabIndex={-1}
                   >
                     {showConfirmPassword ? (
                       <EyeOff className="h-5 w-5 text-gray-400" />
@@ -320,6 +315,15 @@ const Register = () => {
                     'Create account'
                   )}
                 </button>
+                <div className=' flex flex-row justify-center '> <p className="mt-2 text-sm text-gray-600">
+              Already have an account?{' '}
+              <Link
+                to="http://localhost:5173/teacher/login"
+                className="font-medium text-blue-400 text-primary-600 hover:text-primary-500"
+              >
+                Sign in here
+              </Link>
+            </p></div>
               </div>
 
               {/* Auth error */}
@@ -334,29 +338,37 @@ const Register = () => {
       </div>
 
       {/* Right side - Image/Info */}
-      <div className="hidden lg:block relative w-0 flex-1">
-        <div className="absolute inset-0 h-full w-full bg-gradient-to-br from-primary-600 to-primary-800">
-          <div className="flex items-center justify-center h-full p-12">
-            <div className="text-center text-white">
-              <h3 className="text-3xl font-bold mb-4">
-                Join Our Platform
-              </h3>
-              <p className="text-xl text-primary-100 mb-8">
-                Start creating secure online exams with advanced features
-              </p>
-              <div className="grid grid-cols-1 gap-6 text-primary-100">
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-primary-300 rounded-full"></div>
-                  <span>Free account with full features</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-primary-300 rounded-full"></div>
-                  <span>Unlimited exam creation</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-primary-300 rounded-full"></div>
-                  <span>Advanced security features</span>
-                </div>
+      <div
+        className="hidden lg:block relative w-0 flex-1"
+        style={{
+          backgroundImage: unsplashImage
+            ? `linear-gradient(135deg, var(--color-primary-600, #4f46e5) 0%, var(--color-primary-800, #312e81) 100%), url(${unsplashImage})`
+            : 'linear-gradient(135deg, var(--color-primary-600, #4f46e5) 0%, var(--color-primary-800, #312e81) 100%)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundBlendMode: 'overlay',
+        }}
+      >
+        <div className="flex items-center justify-center h-full p-12">
+          <div className="text-center text-white">
+            <h3 className="text-3xl font-bold mb-4">
+              Join Our Platform
+            </h3>
+            <p className="text-xl text-primary-100 mb-8">
+              Start creating secure online exams with advanced features
+            </p>
+            <div className="grid grid-cols-1 gap-6 text-primary-100">
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-primary-300 rounded-full"></div>
+                <span>Free account with full features</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-primary-300 rounded-full"></div>
+                <span>Unlimited exam creation</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-primary-300 rounded-full"></div>
+                <span>Advanced security features</span>
               </div>
             </div>
           </div>
@@ -366,4 +378,4 @@ const Register = () => {
   )
 }
 
-export default Register
+export default Register;

@@ -114,8 +114,8 @@ export const AuthProvider = ({ children }) => {
       const response = await authService.login(credentials);
       
       if (response.success) {
-        const { access_token, refresh_token, user } = response.data;
-        authService.setTokens(access_token, refresh_token);
+        const { access, refresh, user } = response.data;
+        authService.setTokens(access, refresh);
         
         dispatch({
           type: 'LOGIN_SUCCESS',
@@ -149,8 +149,8 @@ export const AuthProvider = ({ children }) => {
       const response = await authService.register(userData);
       
       if (response.success) {
-        const { access_token, refresh_token, user } = response.data;
-        authService.setTokens(access_token, refresh_token);
+        const { access, refresh, user } = response.data;
+        authService.setTokens(access, refresh);
         
         dispatch({
           type: 'LOGIN_SUCCESS',

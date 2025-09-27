@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../hooks/useAuth'
-import { validateRegisterForm } from '../../utils/validation'
-import { Eye, EyeOff, Mail, Lock, User, BookOpen } from 'lucide-react'
-import LoadingSpinner from '../../components/common/LoadingSpinner'
-import toast from 'react-hot-toast'
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import { validateRegisterForm } from '../../utils/validation';
+import { Eye, EyeOff, Mail, Lock, User, BookOpen } from 'lucide-react';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import toast from 'react-hot-toast';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -13,83 +13,77 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: ''
-  })
-  const [errors, setErrors] = useState({})
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [unsplashImage, setUnsplashImage] = useState('')
+  });
+  const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [unsplashImage, setUnsplashImage] = useState('');
 
-  const { register, isAuthenticated, loading, error, clearError } = useAuth()
-  const navigate = useNavigate()
+  // We only need the 'register' and 'clearError' functions from our auth context now.
+  const { register, clearError } = useAuth();
+  const navigate = useNavigate();
 
   // Fetch Unsplash random image on mount
   useEffect(() => {
-    const url = 'https://source.unsplash.com/random/800x800?technology'
-    setUnsplashImage(url + '&' + new Date().getTime())
-  }, [])
-
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated && !loading) {
-      navigate('/teacher/dashboard', { replace: true })
-    }
-  }, [isAuthenticated, loading, navigate])
+    const url = 'https://source.unsplash.com/random/800x800?technology';
+    setUnsplashImage(url + '&' + new Date().getTime());
+  }, []);
 
   // Clear auth errors on mount
   useEffect(() => {
-    clearError()
-  }, [clearError])
+    clearError();
+  }, [clearError]);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: null }))
+      setErrors(prev => ({ ...prev, [name]: null }));
     }
-  }
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    const validation = validateRegisterForm(formData)
+    const validation = validateRegisterForm(formData);
     if (!validation.isValid) {
-      setErrors(validation.errors)
-      return
+      setErrors(validation.errors);
+      return;
     }
 
-    setIsSubmitting(true)
-    setErrors({})
+    setIsSubmitting(true);
+    setErrors({});
 
     try {
       const userData = {
         first_name: formData.firstName,
         last_name: formData.lastName,
         email: formData.email,
-        password: formData.password
-      }
+        password: formData.password,
+        password_confirm: formData.confirmPassword
+      };
 
-      const result = await register(userData)
+      const result = await register(userData);
       if (result.success) {
-        toast.success('Registration successful!')
-        navigate('/teacher/dashboard', { replace: true })
+        toast.success('Registration successful!');
+        // The navigation to the dashboard is now handled by the route guards
+        // No need for navigate('/teacher/dashboard') here.
       } else {
-        toast.error(result.error || 'Registration failed')
+        if (result.error && typeof result.error === 'object') {
+          Object.values(result.error).forEach(errArray => {
+            errArray.forEach(err => toast.error(err));
+          });
+        } else {
+          toast.error(result.error || 'Registration failed');
+        }
       }
-    } catch (err){
-      toast.error('An unexpected error occurred',err)
+    } catch (err) {
+      toast.error('An unexpected error occurred');
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" text="Loading..." />
-      </div>
-    )
-  }
+  };
 
   return (
     <div className="min-h-screen flex">
@@ -318,20 +312,13 @@ const Register = () => {
                 <div className=' flex flex-row justify-center '> <p className="mt-2 text-sm text-gray-600">
               Already have an account?{' '}
               <Link
-                to="http://localhost:5173/teacher/login"
-                className="font-medium text-blue-400 text-primary-600 hover:text-primary-500"
+                to="/teacher/login"
+                className="font-medium text-primary-600 hover:text-primary-500"
               >
                 Sign in here
               </Link>
             </p></div>
               </div>
-
-              {/* Auth error */}
-              {error && (
-                <div className="rounded-md bg-red-50 p-4">
-                  <div className="text-sm text-red-700">{error}</div>
-                </div>
-              )}
             </form>
           </div>
         </div>

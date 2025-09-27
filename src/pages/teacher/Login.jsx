@@ -28,12 +28,6 @@ const Login = () => {
     setUnsplashImage(url + '&' + new Date().getTime())
   }, [])
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated && !loading) {
-      navigate(from, { replace: true })
-    }
-  }, [isAuthenticated, loading, navigate, from])
 
   // Clear auth errors on mount
   useEffect(() => {

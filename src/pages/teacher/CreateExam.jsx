@@ -10,7 +10,13 @@ import {
   Clock, 
   BookOpen,
   CheckSquare,
-  Square
+  Square,
+  FileText,
+  Settings,
+  Shield,
+  Plus,
+  AlertCircle,
+  Check
 } from 'lucide-react'
 import Header from '../../components/common/Header'
 import Footer from '../../components/common/Footer'
@@ -32,15 +38,22 @@ const CreateExam = () => {
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [currentStep, setCurrentStep] = useState(1)
 
   const { createExam, uploadSEBConfig } = useExams()
   const navigate = useNavigate()
+
+  const steps = [
+    { id: 1, name: 'Basic Info', icon: BookOpen, description: 'Exam details' },
+    { id: 2, name: 'Schedule', icon: Calendar, description: 'Date & time' },
+    { id: 3, name: 'Security', icon: Shield, description: 'SEB & checks' },
+    { id: 4, name: 'Instructions', icon: FileText, description: 'Student guide' }
+  ]
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
     
-    // Clear field error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }))
     }
@@ -71,7 +84,6 @@ const CreateExam = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // Validate form
     const validation = validateExamForm(formData)
     if (!validation.isValid) {
       setErrors(validation.errors)
@@ -82,7 +94,6 @@ const CreateExam = () => {
     setErrors({})
 
     try {
-      // Create exam data
       const examData = {
         title: formData.title,
         subject: formData.subject,
@@ -93,13 +104,11 @@ const CreateExam = () => {
         instructions: formData.instructions
       }
 
-      // Create the exam
       const result = await createExam(examData)
       
       if (result.success) {
         const examId = result.data.id
         
-        // Upload SEB config file if provided
         if (formData.sebFile) {
           const uploadResult = await uploadSEBConfig(
             examId, 
@@ -125,311 +134,446 @@ const CreateExam = () => {
     }
   }
 
+  const nextStep = () => {
+    if (currentStep < 4) {
+      setCurrentStep(currentStep + 1)
+    }
+  }
+
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1)
+    }
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-blue-50">
       <Header />
       
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Header */}
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
         <div className="mb-8">
           <button
             onClick={() => navigate('/teacher/dashboard')}
-            className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+            className="inline-flex items-center text-gray-600 hover:text-blue-600 mb-6 transition-colors group"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
             Back to Dashboard
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">Create New Exam</h1>
-          <p className="text-gray-600">Set up a new secure exam with SEB integration</p>
+          
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-900 mb-3">Create New Exam</h1>
+            <p className="text-xl text-gray-600">Set up your secure exam in just a few steps</p>
+          </div>
+
+          {/* Progress Steps */}
+          <div className="flex items-center justify-between max-w-3xl mx-auto mb-12">
+            {steps.map((step, index) => (
+              <div key={step.id} className="flex items-center">
+                <div className="flex flex-col items-center">
+                  <div
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
+                      currentStep >= step.id
+                        ? 'bg-blue-600 text-white shadow-lg'
+                        : 'bg-white border-2 border-gray-300 text-gray-400'
+                    }`}
+                  >
+                    {currentStep > step.id ? (
+                      <Check className="w-6 h-6" />
+                    ) : (
+                      <step.icon className="w-6 h-6" />
+                    )}
+                  </div>
+                  <div className="mt-2 text-center">
+                    <div className={`text-sm font-medium ${currentStep >= step.id ? 'text-blue-600' : 'text-gray-500'}`}>
+                      {step.name}
+                    </div>
+                    <div className="text-xs text-gray-400">{step.description}</div>
+                  </div>
+                </div>
+                {index < steps.length - 1 && (
+                  <div
+                    className={`w-16 h-0.5 mx-4 transition-colors duration-300 ${
+                      currentStep > step.id ? 'bg-blue-600' : 'bg-gray-300'
+                    }`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Basic Information */}
-          <div className="card">
-            <div className="card-header">
-              <h3 className="card-title flex items-center">
-                <BookOpen className="w-5 h-5 mr-2" />
-                Basic Information
-              </h3>
-              <p className="card-description">
-                Enter the basic details for your exam
-              </p>
-            </div>
-            <div className="card-content space-y-6">
-              {/* Title */}
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                  Exam Title *
-                </label>
-                <input
-                  id="title"
-                  name="title"
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  className={`input ${errors.title ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                  placeholder="Enter exam title"
-                />
-                {errors.title && (
-                  <p className="mt-1 text-sm text-red-600">{errors.title}</p>
-                )}
-              </div>
-
-              {/* Subject */}
-              <div>
-                <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
-                  Subject *
-                </label>
-                <input
-                  id="subject"
-                  name="subject"
-                  type="text"
-                  required
-                  value={formData.subject}
-                  onChange={handleInputChange}
-                  className={`input ${errors.subject ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                  placeholder="Enter subject name"
-                />
-                {errors.subject && (
-                  <p className="mt-1 text-sm text-red-600">{errors.subject}</p>
-                )}
-              </div>
-
-              {/* Description */}
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  id="description"
-                  name="description"
-                  rows={3}
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  className="input resize-none"
-                  placeholder="Enter exam description (optional)"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Schedule */}
-          <div className="card">
-            <div className="card-header">
-              <h3 className="card-title flex items-center">
-                <Calendar className="w-5 h-5 mr-2" />
-                Schedule & Duration
-              </h3>
-              <p className="card-description">
-                Set when the exam will be available and how long it will last
-              </p>
-            </div>
-            <div className="card-content space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Date */}
-                <div>
-                  <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
-                    Exam Date *
-                  </label>
-                  <input
-                    id="date"
-                    name="date"
-                    type="date"
-                    required
-                    value={formData.date}
-                    onChange={handleInputChange}
-                    min={new Date().toISOString().split('T')[0]}
-                    className={`input ${errors.dateTime ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                  />
+        <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
+          {/* Step 1: Basic Information */}
+          {currentStep === 1 && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+              <div className="flex items-center mb-6">
+                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mr-4">
+                  <BookOpen className="w-6 h-6 text-blue-600" />
                 </div>
-
-                {/* Time */}
                 <div>
-                  <label htmlFor="time" className="block text-sm font-medium text-gray-700 mb-2">
-                    Exam Time *
-                  </label>
-                  <input
-                    id="time"
-                    name="time"
-                    type="time"
-                    required
-                    value={formData.time}
-                    onChange={handleInputChange}
-                    className={`input ${errors.dateTime ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                  />
+                  <h2 className="text-2xl font-bold text-gray-900">Basic Information</h2>
+                  <p className="text-gray-600">Enter the essential details for your exam</p>
                 </div>
               </div>
 
-              {errors.dateTime && (
-                <p className="text-sm text-red-600">{errors.dateTime}</p>
-              )}
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Exam Title *
+                  </label>
+                  <input
+                    name="title"
+                    type="text"
+                    required
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                      errors.title ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    placeholder="e.g., Advanced Mathematics Final Exam"
+                  />
+                  {errors.title && (
+                    <p className="mt-2 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.title}
+                    </p>
+                  )}
+                </div>
 
-              {/* Duration */}
-              <div>
-                <label htmlFor="duration" className="block text-sm font-medium text-gray-700 mb-2">
-                  Duration (minutes) *
-                </label>
-                <input
-                  id="duration"
-                  name="duration"
-                  type="number"
-                  required
-                  min="15"
-                  max="480"
-                  value={formData.duration}
-                  onChange={handleInputChange}
-                  className={`input ${errors.duration ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                  placeholder="Enter duration in minutes"
-                />
-                {errors.duration && (
-                  <p className="mt-1 text-sm text-red-600">{errors.duration}</p>
-                )}
-                <p className="mt-1 text-sm text-gray-500">
-                  Minimum 15 minutes, maximum 8 hours (480 minutes)
-                </p>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Subject *
+                  </label>
+                  <input
+                    name="subject"
+                    type="text"
+                    required
+                    value={formData.subject}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                      errors.subject ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    placeholder="e.g., Mathematics, Physics, Computer Science"
+                  />
+                  {errors.subject && (
+                    <p className="mt-2 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.subject}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    name="description"
+                    rows={4}
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none hover:border-gray-400"
+                    placeholder="Provide additional details about the exam content and format"
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* SEB Configuration */}
-          <div className="card">
-            <div className="card-header">
-              <h3 className="card-title flex items-center">
-                <Upload className="w-5 h-5 mr-2" />
-                SEB Configuration
-              </h3>
-              <p className="card-description">
-                Upload your Safe Exam Browser configuration file
-              </p>
-            </div>
-            <div className="card-content">
-              <div>
-                <label htmlFor="sebFile" className="block text-sm font-medium text-gray-700 mb-2">
-                  SEB Config File (.seb) *
-                </label>
-                <input
-                  id="sebFile"
-                  name="sebFile"
-                  type="file"
-                  accept=".seb"
-                  required
-                  onChange={handleFileChange}
-                  className={`input ${errors.sebFile ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                />
-                {errors.sebFile && (
-                  <p className="mt-1 text-sm text-red-600">{errors.sebFile}</p>
+          {/* Step 2: Schedule */}
+          {currentStep === 2 && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+              <div className="flex items-center mb-6">
+                <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mr-4">
+                  <Calendar className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Schedule & Duration</h2>
+                  <p className="text-gray-600">Set when the exam will be available</p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Exam Date *
+                    </label>
+                    <input
+                      name="date"
+                      type="date"
+                      required
+                      value={formData.date}
+                      onChange={handleInputChange}
+                      min={new Date().toISOString().split('T')[0]}
+                      className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                        errors.dateTime ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Start Time *
+                    </label>
+                    <input
+                      name="time"
+                      type="time"
+                      required
+                      value={formData.time}
+                      onChange={handleInputChange}
+                      className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                        errors.dateTime ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                {errors.dateTime && (
+                  <p className="text-sm text-red-600 flex items-center">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {errors.dateTime}
+                  </p>
                 )}
-                <p className="mt-1 text-sm text-gray-500">
-                  Upload a .seb configuration file created with Safe Exam Browser
-                </p>
-                
-                {uploadProgress > 0 && (
-                  <div className="mt-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Uploading...</span>
-                      <span className="text-gray-600">{uploadProgress}%</span>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Duration (minutes) *
+                  </label>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                    <input
+                      name="duration"
+                      type="number"
+                      required
+                      min="15"
+                      max="480"
+                      value={formData.duration}
+                      onChange={handleInputChange}
+                      className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                        errors.duration ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                      placeholder="Enter duration in minutes"
+                    />
+                  </div>
+                  {errors.duration && (
+                    <p className="mt-2 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.duration}
+                    </p>
+                  )}
+                  <p className="mt-2 text-sm text-gray-500">
+                    Minimum 15 minutes, maximum 8 hours (480 minutes)
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Security */}
+          {currentStep === 3 && (
+            <div className="space-y-8">
+              {/* SEB Configuration */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+                <div className="flex items-center mb-6">
+                  <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mr-4">
+                    <Shield className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">SEB Configuration</h2>
+                    <p className="text-gray-600">Upload your Safe Exam Browser config file</p>
+                  </div>
+                </div>
+
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors">
+                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <div>
+                    <label htmlFor="sebFile" className="cursor-pointer">
+                      <span className="text-blue-600 hover:text-blue-500 font-medium">
+                        Click to upload
+                      </span>{' '}
+                      <span className="text-gray-600">or drag and drop your .seb file here</span>
+                    </label>
+                    <input
+                      id="sebFile"
+                      name="sebFile"
+                      type="file"
+                      accept=".seb"
+                      required
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </div>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Safe Exam Browser configuration files only (.seb)
+                  </p>
+                  
+                  {formData.sebFile && (
+                    <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center justify-center text-green-700">
+                        <Check className="w-5 h-5 mr-2" />
+                        File selected: {formData.sebFile.name}
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                  )}
+                  
+                  {errors.sebFile && (
+                    <p className="mt-2 text-sm text-red-600 flex items-center justify-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.sebFile}
+                    </p>
+                  )}
+                </div>
+
+                {uploadProgress > 0 && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between text-sm mb-2">
+                      <span className="text-gray-600">Uploading configuration...</span>
+                      <span className="text-blue-600 font-medium">{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
                       <div 
-                        className="bg-primary-600 h-2 rounded-full transition-all duration-300"
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                         style={{ width: `${uploadProgress}%` }}
-                      ></div>
+                      />
                     </div>
                   </div>
                 )}
               </div>
-            </div>
-          </div>
 
-          {/* Compatibility Checks */}
-          <div className="card">
-            <div className="card-header">
-              <h3 className="card-title flex items-center">
-                <CheckSquare className="w-5 h-5 mr-2" />
-                Compatibility Checks
-              </h3>
-              <p className="card-description">
-                Select which system checks students must pass before taking the exam
-              </p>
-            </div>
-            <div className="card-content">
-              <div className="space-y-4">
-                {Object.values(COMPATIBILITY_CHECKS).map((check) => (
-                  <label 
-                    key={check.key}
-                    className="flex items-start space-x-3 cursor-pointer"
-                  >
-                    <button
-                      type="button"
+              {/* Compatibility Checks */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+                <div className="flex items-center mb-6">
+                  <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mr-4">
+                    <Settings className="w-6 h-6 text-orange-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Compatibility Checks</h2>
+                    <p className="text-gray-600">Select system requirements for students</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {Object.values(COMPATIBILITY_CHECKS).map((check) => (
+                    <div
+                      key={check.key}
+                      className={`border-2 rounded-xl p-4 transition-all duration-200 cursor-pointer hover:shadow-sm ${
+                        formData.compatibilityChecks.includes(check.key)
+                          ? 'border-blue-200 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
                       onClick={() => handleCompatibilityCheck(check.key)}
-                      className="flex-shrink-0 mt-0.5"
                     >
-                      {formData.compatibilityChecks.includes(check.key) ? (
-                        <CheckSquare className="w-5 h-5 text-primary-600" />
-                      ) : (
-                        <Square className="w-5 h-5 text-gray-400" />
-                      )}
-                    </button>
-                    <div>
-                      <div className="font-medium text-gray-900">{check.label}</div>
-                      <div className="text-sm text-gray-600">{check.description}</div>
+                      <div className="flex items-start space-x-4">
+                        <div className="flex-shrink-0 mt-1">
+                          {formData.compatibilityChecks.includes(check.key) ? (
+                            <CheckSquare className="w-6 h-6 text-blue-600" />
+                          ) : (
+                            <Square className="w-6 h-6 text-gray-400" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-900 mb-1">{check.label}</div>
+                          <div className="text-sm text-gray-600 leading-relaxed">{check.description}</div>
+                        </div>
+                      </div>
                     </div>
-                  </label>
-                ))}
+                  ))}
+                </div>
+
+                {errors.compatibilityChecks && (
+                  <p className="mt-4 text-sm text-red-600 flex items-center">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {errors.compatibilityChecks}
+                  </p>
+                )}
               </div>
-              {errors.compatibilityChecks && (
-                <p className="mt-2 text-sm text-red-600">{errors.compatibilityChecks}</p>
-              )}
             </div>
-          </div>
+          )}
 
-          {/* Instructions */}
-          <div className="card">
-            <div className="card-header">
-              <h3 className="card-title">Instructions for Students</h3>
-              <p className="card-description">
-                Optional instructions that will be shown to students before the exam
-              </p>
-            </div>
-            <div className="card-content">
-              <textarea
-                id="instructions"
-                name="instructions"
-                rows={4}
-                value={formData.instructions}
-                onChange={handleInputChange}
-                className="input resize-none"
-                placeholder="Enter any special instructions for students (optional)"
-              />
-            </div>
-          </div>
+          {/* Step 4: Instructions */}
+          {currentStep === 4 && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+              <div className="flex items-center mb-6">
+                <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mr-4">
+                  <FileText className="w-6 h-6 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Student Instructions</h2>
+                  <p className="text-gray-600">Provide guidance for students taking the exam</p>
+                </div>
+              </div>
 
-          {/* Form Actions */}
-          <div className="flex items-center justify-end space-x-4 pt-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Instructions (Optional)
+                </label>
+                <textarea
+                  name="instructions"
+                  rows={8}
+                  value={formData.instructions}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none hover:border-gray-400"
+                  placeholder="Enter any special instructions, requirements, or notes for students taking this exam..."
+                />
+                <p className="mt-2 text-sm text-gray-500">
+                  These instructions will be displayed to students before they start the exam
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Navigation */}
+          <div className="flex items-center justify-between bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <button
               type="button"
-              onClick={() => navigate('/teacher/dashboard')}
-              className="btn btn-outline"
-              disabled={isSubmitting}
+              onClick={prevStep}
+              disabled={currentStep === 1}
+              className={`inline-flex items-center px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
+                currentStep === 1
+                  ? 'text-gray-400 cursor-not-allowed'
+                  : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+              }`}
             >
-              Cancel
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Previous
             </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="btn btn-primary"
-            >
-              {isSubmitting ? (
-                <div className="flex items-center">
-                  <LoadingSpinner size="sm" />
-                  <span className="ml-2">Creating Exam...</span>
-                </div>
-              ) : (
-                'Create Exam'
-              )}
-            </button>
+
+            <div className="text-center">
+              <span className="text-sm text-gray-500">
+                Step {currentStep} of {steps.length}
+              </span>
+            </div>
+
+            {currentStep < 4 ? (
+              <button
+                type="button"
+                onClick={nextStep}
+                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
+              >
+                Next
+                <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? (
+                  <>
+                    <LoadingSpinner size="sm" />
+                    <span className="ml-2">Creating Exam...</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Exam
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </form>
       </main>

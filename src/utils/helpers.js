@@ -213,48 +213,58 @@ export const checkInternetSpeed = async () => {
   }
 }
 
-// Local Storage Utilities
+// Local Storage Utilities (Updated)
 export const storage = {
   set: (key, value) => {
     try {
-      localStorage.setItem(key, JSON.stringify(value))
-      return true
+      const valueToStore = typeof value === 'object' && value !== null 
+        ? JSON.stringify(value) 
+        : value;
+      localStorage.setItem(key, valueToStore);
+      return true;
     } catch (error) {
-      console.error('Error saving to localStorage:', error)
-      return false
+      console.error('Error saving to localStorage:', error);
+      return false;
     }
   },
   
   get: (key) => {
     try {
-      const item = localStorage.getItem(key)
-      return item ? JSON.parse(item) : null
+      const item = localStorage.getItem(key);
+      if (item === null) {
+        return null;
+      }
+      try {
+        return JSON.parse(item);
+      } catch (e) {
+        return item;
+      }
     } catch (error) {
-      console.error('Error reading from localStorage:', error)
-      return null
+      console.error('Error reading from localStorage:', error);
+      return null;
     }
   },
   
   remove: (key) => {
     try {
-      localStorage.removeItem(key)
-      return true
+      localStorage.removeItem(key);
+      return true;
     } catch (error) {
-      console.error('Error removing from localStorage:', error)
-      return false
+      console.error('Error removing from localStorage:', error);
+      return false;
     }
   },
   
   clear: () => {
     try {
-      localStorage.clear()
-      return true
+      localStorage.clear();
+      return true;
     } catch (error) {
-      console.error('Error clearing localStorage:', error)
-      return false
+      console.error('Error clearing localStorage:', error);
+      return false;
     }
   }
-}
+};
 
 // Error Handling
 export const handleApiError = (error) => {

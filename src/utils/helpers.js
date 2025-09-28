@@ -213,13 +213,23 @@ export const checkInternetSpeed = async () => {
   }
 }
 
-// Local Storage Utilities (Updated)
 export const storage = {
   set: (key, value) => {
     try {
-      const valueToStore = typeof value === 'object' && value !== null 
-        ? JSON.stringify(value) 
-        : value;
+      let valueToStore;
+      
+      // Handle different types of values
+      if (value === null || value === undefined) {
+        valueToStore = value;
+      } else if (typeof value === 'string') {
+        valueToStore = value;
+      } else if (typeof value === 'number' || typeof value === 'boolean') {
+        valueToStore = String(value);
+      } else {
+        // For objects, arrays, etc.
+        valueToStore = JSON.stringify(value);
+      }
+      
       localStorage.setItem(key, valueToStore);
       return true;
     } catch (error) {
@@ -231,12 +241,16 @@ export const storage = {
   get: (key) => {
     try {
       const item = localStorage.getItem(key);
+      
       if (item === null) {
         return null;
       }
+      
+      // Try to parse as JSON first
       try {
         return JSON.parse(item);
-      } catch (e) {
+      } catch (parseError) {
+        // If JSON parsing fails, return as string
         return item;
       }
     } catch (error) {
@@ -265,7 +279,6 @@ export const storage = {
     }
   }
 };
-
 // Error Handling
 export const handleApiError = (error) => {
   if (error.response) {

@@ -1,6 +1,6 @@
 import { apiRequest, handleRequest, uploadFile } from './api'
 
-// Exam service for teacher operations
+// Exam service - Updated to match API documentation
 export const examService = {
   // Get all exams for current teacher
   getExams: async (params = {}) => {
@@ -17,17 +17,75 @@ export const examService = {
     )
   },
 
-  // Create new exam
+  // Create new exam - Updated to use FormData for file upload
   createExam: async (examData) => {
+    const formData = new FormData()
+    
+    // Add text fields
+    formData.append('title', examData.title)
+    formData.append('subject', examData.subject)
+    formData.append('exam_date', examData.exam_date)
+    formData.append('exam_time', examData.exam_time)
+    formData.append('duration_minutes', examData.duration_minutes)
+    formData.append('launch_window_minutes', examData.launch_window_minutes || 30)
+    
+    if (examData.description) {
+      formData.append('description', examData.description)
+    }
+    
+    if (examData.additional_requirements) {
+      formData.append('additional_requirements', examData.additional_requirements)
+    }
+    
+    // Add SEB config file
+    if (examData.seb_config_file) {
+      formData.append('seb_config_file', examData.seb_config_file)
+    }
+    
+    // Add required checks as JSON string
+    if (examData.required_checks) {
+      formData.append('required_checks', JSON.stringify(examData.required_checks))
+    }
+
     return handleRequest(() => 
-      apiRequest.post('/exams/', examData)
+      apiRequest.post('/exams/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
     )
   },
 
   // Update existing exam
   updateExam: async (examId, examData) => {
+    const formData = new FormData()
+    
+    // Add text fields
+    if (examData.title) formData.append('title', examData.title)
+    if (examData.subject) formData.append('subject', examData.subject)
+    if (examData.exam_date) formData.append('exam_date', examData.exam_date)
+    if (examData.exam_time) formData.append('exam_time', examData.exam_time)
+    if (examData.duration_minutes) formData.append('duration_minutes', examData.duration_minutes)
+    if (examData.launch_window_minutes) formData.append('launch_window_minutes', examData.launch_window_minutes)
+    if (examData.description !== undefined) formData.append('description', examData.description)
+    if (examData.additional_requirements !== undefined) formData.append('additional_requirements', examData.additional_requirements)
+    
+    // Add SEB config file if provided
+    if (examData.seb_config_file) {
+      formData.append('seb_config_file', examData.seb_config_file)
+    }
+    
+    // Add required checks if provided
+    if (examData.required_checks) {
+      formData.append('required_checks', JSON.stringify(examData.required_checks))
+    }
+
     return handleRequest(() => 
-      apiRequest.put(`/exams/${examId}/`, examData)
+      apiRequest.put(`/exams/${examId}/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
     )
   },
 
@@ -39,93 +97,19 @@ export const examService = {
   },
 
   // Duplicate exam
-  duplicateExam: async (examId) => {
+  duplicateExam: async (examId, newExamData) => {
     return handleRequest(() => 
-      apiRequest.post(`/exams/${examId}/duplicate/`)
+      apiRequest.post(`/exams/${examId}/duplicate/`, newExamData)
     )
   },
 
-  // Upload SEB configuration file
-  uploadSEBConfig: async (examId, file, onProgress = null) => {
+  // Get exam attempts
+  getExamAttempts: async (examId) => {
     return handleRequest(() => 
-      uploadFile(`/exams/${examId}/seb-config/`, file, onProgress)
+      apiRequest.get(`/exams/${examId}/attempts/`)
     )
   },
 
-  // Download SEB configuration file
-  downloadSEBConfig: async (examId) => {
-    return handleRequest(() => 
-      apiRequest.get(`/exams/${examId}/seb-config/`, {
-        responseType: 'blob'
-      })
-    )
-  },
-
-  // Generate exam access link
-  generateExamLink: async (examId) => {
-    return handleRequest(() => 
-      apiRequest.post(`/exams/${examId}/generate-link/`)
-    )
-  },
-
-  // Get exam statistics
-  getExamStats: async (examId) => {
-    return handleRequest(() => 
-      apiRequest.get(`/exams/${examId}/stats/`)
-    )
-  },
-
-  // Get exam attempts/submissions
-  getExamAttempts: async (examId, params = {}) => {
-    const queryParams = new URLSearchParams(params).toString()
-    return handleRequest(() => 
-      apiRequest.get(`/exams/${examId}/attempts/${queryParams ? `?${queryParams}` : ''}`)
-    )
-  },
-
-  // Update exam status (activate, deactivate, etc.)
-  updateExamStatus: async (examId, status) => {
-    return handleRequest(() => 
-      apiRequest.patch(`/exams/${examId}/status/`, { status })
-    )
-  },
-
-  // Get exam dashboard data
-  getDashboardData: async () => {
-    return handleRequest(() => 
-      apiRequest.get('/exams/dashboard/')
-    )
-  },
-
-  // Bulk operations
-  bulkUpdateExams: async (examIds, updates) => {
-    return handleRequest(() => 
-      apiRequest.post('/exams/bulk-update/', { examIds, updates })
-    )
-  },
-
-  bulkDeleteExams: async (examIds) => {
-    return handleRequest(() => 
-      apiRequest.post('/exams/bulk-delete/', { examIds })
-    )
-  },
-
-  // Export exam data
-  exportExam: async (examId, format = 'json') => {
-    return handleRequest(() => 
-      apiRequest.get(`/exams/${examId}/export/`, {
-        params: { format },
-        responseType: format === 'csv' ? 'blob' : 'json'
-      })
-    )
-  },
-
-  // Import exam data
-  importExam: async (file, onProgress = null) => {
-    return handleRequest(() => 
-      uploadFile('/exams/import/', file, onProgress)
-    )
-  }
 }
 
 export default examService;

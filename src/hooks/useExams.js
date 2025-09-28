@@ -1,3 +1,4 @@
+// src/hooks/useExams.js
 import { useState, useEffect, useCallback } from 'react';
 import { examService } from '../services/examService';
 import toast from 'react-hot-toast';
@@ -60,16 +61,16 @@ export const useExams = () => {
     return result;
   };
 
-  const uploadSEBConfig = async (examId, file, onProgress) => {
-      const result = await examService.uploadSEBConfig(examId, file, onProgress);
-      if(!result.success){
-          toast.error(result.error || 'Failed to upload SEB config');
-      }
-      return result;
-  }
 
-
-  return { exams, loading, error, refetch: fetchExams, createExam, updateExam, deleteExam, uploadSEBConfig };
+  return { 
+    exams, 
+    loading, 
+    error, 
+    refetch: fetchExams, 
+    createExam, 
+    updateExam, 
+    deleteExam 
+  };
 };
 
 export const useExam = (examId) => {
@@ -101,30 +102,27 @@ export const useExam = (examId) => {
     return { exam, loading, error, refetch: fetchExam };
 }
 
+// Simple dashboard hook - calculates stats from exams
 export const useDashboard = () => {
+    const { exams, loading, error } = useExams();
     const [dashboardData, setDashboardData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-
-    const fetchDashboardData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const response = await examService.getDashboardData();
-            if(response.success){
-                setDashboardData(response.data);
-            } else {
-                setError(response.error);
-            }
-        } catch (err) {
-            setError('Failed to fetch dashboard data');
-        } finally {
-            setLoading(false);
-        }
-    }, []);
 
     useEffect(() => {
-        fetchDashboardData();
-    }, [fetchDashboardData]);
+        if (exams.length >= 0) {
+            const stats = {
+                totalExams: exams.length,
+                activeExams: exams.filter(exam => exam.is_active && exam.is_exam_time_active).length,
+                completedExams: exams.filter(exam => !exam.is_exam_time_active).length,
+                totalAttempts: exams.reduce((sum, exam) => sum + (exam.attempts_count || 0), 0)
+            };
+            setDashboardData(stats);
+        }
+    }, [exams]);
 
-    return { dashboardData, loading, error, refetch: fetchDashboardData };
+    return { 
+        dashboardData, 
+        loading, 
+        error, 
+        refetch: () => {} // Handled by useExams
+    };
 }

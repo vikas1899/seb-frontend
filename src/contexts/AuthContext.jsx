@@ -1,7 +1,8 @@
-import React, { createContext, useReducer, useEffect } from 'react';
-import { authService } from '../services/auth';
-import { TOKEN_KEY, REFRESH_TOKEN_KEY } from '../utils/constants';
-import { storage } from '../utils/helpers';
+// src/contexts/AuthContext.jsx
+import React, { createContext, useReducer, useEffect } from "react";
+import { authService } from "../services/auth";
+import { TOKEN_KEY, REFRESH_TOKEN_KEY } from "../utils/constants";
+import { storage } from "../utils/helpers";
 
 // Export the context directly
 export const AuthContext = createContext();
@@ -9,55 +10,55 @@ export const AuthContext = createContext();
 // Auth reducer
 const authReducer = (state, action) => {
   switch (action.type) {
-    case 'SET_LOADING':
+    case "SET_LOADING":
       return { ...state, loading: action.payload };
-    
-    case 'LOGIN_SUCCESS':
+
+    case "LOGIN_SUCCESS":
       return {
         ...state,
         isAuthenticated: true,
         user: action.payload.user,
         loading: false,
-        error: null
+        error: null,
       };
-    
-    case 'LOGIN_FAILURE':
+
+    case "LOGIN_FAILURE":
       return {
         ...state,
         isAuthenticated: false,
         user: null,
         loading: false,
-        error: action.payload
+        error: action.payload,
       };
-    
-    case 'LOGOUT':
+
+    case "LOGOUT":
       return {
         ...state,
         isAuthenticated: false,
         user: null,
         loading: false,
-        error: null
+        error: null,
       };
-    
-    case 'UPDATE_USER':
+
+    case "UPDATE_USER":
       return {
         ...state,
-        user: { ...state.user, ...action.payload }
+        user: { ...state.user, ...action.payload },
       };
-    
-    case 'SET_ERROR':
+
+    case "SET_ERROR":
       return {
         ...state,
         error: action.payload,
-        loading: false
+        loading: false,
       };
-    
-    case 'CLEAR_ERROR':
+
+    case "CLEAR_ERROR":
       return {
         ...state,
-        error: null
+        error: null,
       };
-    
+
     default:
       return state;
   }
@@ -68,7 +69,7 @@ const initialState = {
   isAuthenticated: false,
   user: null,
   loading: true,
-  error: null
+  error: null,
 };
 
 // Auth provider component
@@ -79,97 +80,103 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       const token = storage.get(TOKEN_KEY);
-      
+
       if (token) {
         try {
           const response = await authService.getProfile();
           if (response.success) {
             dispatch({
-              type: 'LOGIN_SUCCESS',
-              payload: { user: response.data }
+              type: "LOGIN_SUCCESS",
+              payload: { user: response.data },
             });
           } else {
             // Token exists but invalid
             authService.clearTokens();
-            dispatch({ type: 'LOGOUT' });
+            dispatch({ type: "LOGOUT" });
           }
         } catch (error) {
           authService.clearTokens();
-          dispatch({ type: 'LOGOUT' });
+          dispatch({ type: "LOGOUT" });
         }
       } else {
-        dispatch({ type: 'SET_LOADING', payload: false });
+        dispatch({ type: "SET_LOADING", payload: false });
       }
     };
 
     initAuth();
   }, []);
 
-  // Login function
+  // Login function - Fixed token handling
   const login = async (credentials) => {
-    dispatch({ type: 'SET_LOADING', payload: true });
-    dispatch({ type: 'CLEAR_ERROR' });
+    dispatch({ type: "SET_LOADING", payload: true });
+    dispatch({ type: "CLEAR_ERROR" });
 
     try {
       const response = await authService.login(credentials);
-      
+
       if (response.success) {
-        const { access, refresh, user } = response.data;
-        authService.setTokens(access, refresh);
-        
+        // Extract data from API response format
+        const { tokens, teacher } = response.data;
+
+        // Store tokens
+        authService.setTokens(tokens.access, tokens.refresh);
+
         dispatch({
-          type: 'LOGIN_SUCCESS',
-          payload: { user }
+          type: "LOGIN_SUCCESS",
+          payload: { user: teacher },
         });
-        
+
         return { success: true };
       } else {
         dispatch({
-          type: 'LOGIN_FAILURE',
-          payload: response.error
+          type: "LOGIN_FAILURE",
+          payload: response.error,
         });
         return { success: false, error: response.error };
       }
     } catch (error) {
-      const errorMessage = 'Login failed. Please try again.';
+      const errorMessage = "Login failed. Please try again.";
       dispatch({
-        type: 'LOGIN_FAILURE',
-        payload: errorMessage
+        type: "LOGIN_FAILURE",
+        payload: errorMessage,
       });
       return { success: false, error: errorMessage };
     }
   };
 
-  // Register function
+  // Register function - Fixed token handling
   const register = async (userData) => {
-    dispatch({ type: 'SET_LOADING', payload: true });
-    dispatch({ type: 'CLEAR_ERROR' });
+    dispatch({ type: "SET_LOADING", payload: true });
+    dispatch({ type: "CLEAR_ERROR" });
 
     try {
       const response = await authService.register(userData);
-      
+
       if (response.success) {
-        const { access, refresh, user } = response.data;
-        authService.setTokens(access, refresh);
-        
+        // Extract data from API response format
+        const { tokens, teacher } = response.data;
+
+        // Store tokens
+        authService.setTokens(tokens.access, tokens.refresh);
+
         dispatch({
-          type: 'LOGIN_SUCCESS',
-          payload: { user }
+          type: "LOGIN_SUCCESS",
+          payload: { user: teacher },
         });
-        
+
         return { success: true };
       } else {
         dispatch({
-          type: 'SET_ERROR',
-          payload: response.error
+          type: "SET_ERROR",
+          payload: response.error,
         });
         return { success: false, error: response.error };
       }
     } catch (error) {
-      const errorMessage = 'Registration failed. Please try again.';
+      const errorMessage = "Registration failed. Please try again.";
       dispatch({
-        type: 'SET_ERROR',
-        payload: errorMessage
+        type: "SET_ERROR",
+        payload: errorMessage,
       });
       return { success: false, error: errorMessage };
     }
@@ -177,14 +184,14 @@ export const AuthProvider = ({ children }) => {
 
   // Logout function
   const logout = async () => {
-    dispatch({ type: 'SET_LOADING', payload: true });
+    dispatch({ type: "SET_LOADING", payload: true });
 
     try {
       await authService.logout();
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     } finally {
-      dispatch({ type: 'LOGOUT' });
+      dispatch({ type: "LOGOUT" });
     }
   };
 
@@ -192,34 +199,34 @@ export const AuthProvider = ({ children }) => {
   const updateProfile = async (profileData) => {
     try {
       const response = await authService.updateProfile(profileData);
-      
+
       if (response.success) {
         dispatch({
-          type: 'UPDATE_USER',
-          payload: response.data
+          type: "UPDATE_USER",
+          payload: response.data,
         });
         return { success: true };
       } else {
         return { success: false, error: response.error };
       }
     } catch (error) {
-      return { success: false, error: 'Profile update failed' };
+      return { success: false, error: "Profile update failed" };
     }
   };
 
-  // Change password
-  const changePassword = async (passwordData) => {
-    try {
-      const response = await authService.changePassword(passwordData);
-      return response;
-    } catch (error) {
-      return { success: false, error: 'Password change failed' };
-    }
-  };
+  // Change password - Removed since not in API
+  // const changePassword = async (passwordData) => {
+  //   try {
+  //     const response = await authService.changePassword(passwordData);
+  //     return response;
+  //   } catch (error) {
+  //     return { success: false, error: 'Password change failed' };
+  //   }
+  // };
 
   // Clear error
   const clearError = () => {
-    dispatch({ type: 'CLEAR_ERROR' });
+    dispatch({ type: "CLEAR_ERROR" });
   };
 
   const value = {
@@ -228,13 +235,8 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateProfile,
-    changePassword,
-    clearError
+    clearError,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

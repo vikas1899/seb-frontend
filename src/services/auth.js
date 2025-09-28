@@ -1,8 +1,9 @@
+// src/services/auth.js
 import { apiRequest, handleRequest } from './api'
 import { TOKEN_KEY, REFRESH_TOKEN_KEY } from '../utils/constants'
 import { storage } from '../utils/helpers'
 
-// Authentication service
+// Authentication service - Updated to match API documentation
 export const authService = {
   // Login teacher
   login: async (credentials) => {
@@ -21,11 +22,11 @@ export const authService = {
   // Refresh token
   refresh: async (refreshToken) => {
     return handleRequest(() => 
-      apiRequest.post('/auth/refresh/', { refresh: refreshToken })
+      apiRequest.post('/auth/token/refresh/', { refresh: refreshToken })
     )
   },
 
-  // Logout
+  // Logout - Updated endpoint
   logout: async () => {
     const refreshToken = storage.get(REFRESH_TOKEN_KEY)
     
@@ -38,8 +39,7 @@ export const authService = {
     }
     
     // Clear tokens regardless of API call success
-    storage.remove(TOKEN_KEY)
-    storage.remove(REFRESH_TOKEN_KEY)
+    authService.clearTokens()
     
     return { success: true }
   },
@@ -51,40 +51,40 @@ export const authService = {
     )
   },
 
-  // Update profile
+  // Update profile - Updated endpoint
   updateProfile: async (profileData) => {
     return handleRequest(() => 
-      apiRequest.put('/auth/profile/', profileData)
+      apiRequest.put('/auth/profile/update/', profileData)
     )
   },
 
-  // Change password
-  changePassword: async (passwordData) => {
-    return handleRequest(() => 
-      apiRequest.post('/auth/change-password/', passwordData)
-    )
-  },
+  // Change password - Removed (not in API docs)
+  // changePassword: async (passwordData) => {
+  //   return handleRequest(() => 
+  //     apiRequest.post('/auth/change-password/', passwordData)
+  //   )
+  // },
 
-  // Forgot password
-  forgotPassword: async (email) => {
-    return handleRequest(() => 
-      apiRequest.post('/auth/forgot-password/', { email })
-    )
-  },
+  // Forgot password - Removed (not in API docs)
+  // forgotPassword: async (email) => {
+  //   return handleRequest(() => 
+  //     apiRequest.post('/auth/forgot-password/', { email })
+  //   )
+  // },
 
-  // Reset password
-  resetPassword: async (token, password) => {
-    return handleRequest(() => 
-      apiRequest.post('/auth/reset-password/', { token, password })
-    )
-  },
+  // Reset password - Removed (not in API docs)
+  // resetPassword: async (token, password) => {
+  //   return handleRequest(() => 
+  //     apiRequest.post('/auth/reset-password/', { token, password })
+  //   )
+  // },
 
-  // Verify email
-  verifyEmail: async (token) => {
-    return handleRequest(() => 
-      apiRequest.post('/auth/verify-email/', { token })
-    )
-  },
+  // Verify email - Removed (not in API docs)
+  // verifyEmail: async (token) => {
+  //   return handleRequest(() => 
+  //     apiRequest.post('/auth/verify-email/', { token })
+  //   )
+  // },
 
   // Check if user is authenticated
   isAuthenticated: () => {
@@ -102,11 +102,18 @@ export const authService = {
     return storage.get(REFRESH_TOKEN_KEY)
   },
 
-  // Set tokens
+  // Set tokens - Fixed to handle object response from API
   setTokens: (accessToken, refreshToken) => {
-    storage.set(TOKEN_KEY, accessToken)
-    if (refreshToken) {
-      storage.set(REFRESH_TOKEN_KEY, refreshToken)
+    if (typeof accessToken === 'object' && accessToken.tokens) {
+      // Handle API response format: { tokens: { access: "...", refresh: "..." } }
+      storage.set(TOKEN_KEY, accessToken.tokens.access)
+      storage.set(REFRESH_TOKEN_KEY, accessToken.tokens.refresh)
+    } else {
+      // Handle direct token values
+      storage.set(TOKEN_KEY, accessToken)
+      if (refreshToken) {
+        storage.set(REFRESH_TOKEN_KEY, refreshToken)
+      }
     }
   },
 
